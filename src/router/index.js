@@ -1,52 +1,72 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('../views/Home.vue'),
+    name: 'Home',
+    component: () => import('../pages/HomePage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/login',
-    name: 'login',
-    component: () => import('../views/Login.vue')
+    name: 'Login',
+    component: () => import('../pages/LoginPage.vue'),
+    meta: { guest: true }
   },
   {
     path: '/register',
-    name: 'register',
-    component: () => import('../views/Register.vue')
+    name: 'Register',
+    component: () => import('../pages/RegisterPage.vue'),
+    meta: { guest: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../pages/ProfilePage.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/transactions',
-    name: 'transactions',
-    component: () => import('../views/Transactions.vue'),
+    name: 'Transactions',
+    component: () => import('../pages/TransactionsPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/categories',
+    name: 'Categories',
+    component: () => import('../pages/CategoriesPage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/import',
-    name: 'import',
-    component: () => import('../views/ImportTransactions.vue'),
+    name: 'Import',
+    component: () => import('../pages/ImportPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/analytics',
+    name: 'Analytics',
+    component: () => import('../pages/AnalyticsPage.vue'),
     meta: { requiresAuth: true }
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
   routes
-})
+});
 
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
-    next('/')
+    next('/login');
+  } else if (to.meta.guest && authStore.isAuthenticated) {
+    next('/');
   } else {
-    next()
+    next();
   }
-})
+});
 
-export default router
+export default router;

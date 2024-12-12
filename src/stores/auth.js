@@ -1,45 +1,98 @@
-import { defineStore } from 'pinia'
-import axios from 'axios'
+import { defineStore } from 'pinia';
+import { auth } from '../api/client';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    token: null
+    isAuthenticated: false,
+    loading: false,
+    error: null
   }),
-  
-  getters: {
-    isAuthenticated: (state) => !!state.token
-  },
-  
+
   actions: {
     async login(email, password) {
+      this.loading = true;
       try {
-        const response = await axios.post('/api/auth/login', { email, password })
-        this.user = response.data.user
-        this.token = response.data.token
-        return true
+        const { data } = await auth.login(email, password);
+        this.user = data.user;
+        this.isAuthenticated = true;
+        this.error = null;
       } catch (error) {
-        console.error('Login failed:', error)
-        throw error
+        this.error = error.response?.data?.message || 'Login failed';
+        throw error;
+      } finally {
+        this.loading = false;
       }
     },
-    
-    async register(email, password) {
+
+    async register(userData) {
+      this.loading = true;
       try {
-        const response = await axios.post('/api/auth/register', { email, password })
-        this.user = response.data.user
-        this.token = response.data.token
-        return true
+        const { data } = await auth.register(userData);
+        this.user = data.user;
+        this.isAuthenticated = true;
+        this.error = null;
       } catch (error) {
-        console.error('Registration failed:', error)
-        throw error
+        this.error = error.response?.data?.message || 'Registration failed';
+        throw error;
+      } finally {
+        this.loading = false;
       }
     },
-    
-    logout() {
-      this.user = null
-      this.token = null
-      axios.post('/api/auth/logout')
+
+    async logout() {
+      try {
+        await auth.logout();
+        this.user = null;
+        this.isAuthenticated = false;
+        this.error = null;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Logout failed';
+        throw error;
+      }
+    },
+
+    async fetchProfile() {
+      this.loading = true;
+      try {
+        const { data } = await auth.getProfile();
+        this.user = data;
+        this.isAuthenticated = true;
+        this.error = null;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to fetch profile';
+        this.user = null;
+        this.isAuthenticated = false;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async updateProfile(userData) {
+      this.loading = true;
+      try {
+        const { data } = await auth.updateProfile(userData);
+        this.user = data;
+        this.error = null;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to update profile';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async deleteAccount() {
+      try {
+        await auth.deleteAccount();
+        this.user = null;
+        this.isAuthenticated = false;
+        this.error = null;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to delete account';
+        throw error;
+      }
     }
   }
-})
+});

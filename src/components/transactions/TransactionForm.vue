@@ -1,114 +1,106 @@
-<script setup>
-import { ref } from 'vue'
-import { useTransactionStore } from '../../stores/transaction'
-import InputField from '../forms/InputField.vue'
-
-const props = defineProps({
-  onSubmit: {
-    type: Function,
-    required: true
-  }
-})
-
-const store = useTransactionStore()
-const type = ref('EXPENSE')
-const amount = ref('')
-const description = ref('')
-const categoryId = ref('')
-const error = ref('')
-
-const handleSubmit = async () => {
-  try {
-    error.value = ''
-    if (!amount.value || !description.value || !categoryId.value) {
-      error.value = 'Please fill in all fields'
-      return
-    }
-
-    await props.onSubmit({
-      type: type.value,
-      amount: parseFloat(amount.value),
-      description: description.value,
-      categoryId: parseInt(categoryId.value),
-      date: new Date()
-    })
-
-    // Reset form
-    type.value = 'EXPENSE'
-    amount.value = ''
-    description.value = ''
-    categoryId.value = ''
-  } catch (err) {
-    error.value = 'Failed to add transaction'
-  }
-}
-</script>
-
 <template>
-  <form @submit.prevent="handleSubmit" class="bg-white p-6 rounded-lg shadow-md">
-    <div class="grid grid-cols-1 gap-4">
-      <div class="flex items-center space-x-4">
-        <label class="inline-flex items-center">
-          <input
-            type="radio"
-            v-model="type"
-            value="EXPENSE"
-            class="form-radio text-indigo-600"
-          >
-          <span class="ml-2">Expense</span>
-        </label>
-        <label class="inline-flex items-center">
-          <input
-            type="radio"
-            v-model="type"
-            value="INCOME"
-            class="form-radio text-indigo-600"
-          >
-          <span class="ml-2">Income</span>
-        </label>
-      </div>
+  <form @submit.prevent="handleSubmit" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Description</label>
+      <input
+        type="text"
+        v-model="form.description"
+        required
+        class="input mt-1"
+        placeholder="Enter description"
+      />
+    </div>
 
-      <InputField
-        v-model="amount"
-        label="Amount"
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Amount</label>
+      <input
         type="number"
+        v-model="form.amount"
+        required
         step="0.01"
+        class="input mt-1"
+        placeholder="0.00"
       />
+    </div>
 
-      <InputField
-        v-model="description"
-        label="Description"
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Category</label>
+      <select v-model="form.categoryId" required class="input mt-1">
+        <option value="">Select a category</option>
+        <option v-for="category in categories" :key="category.id" :value="category.id">
+          {{ category.name }}
+        </option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Type</label>
+      <select v-model="form.type" required class="input mt-1">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Date</label>
+      <input
+        type="date"
+        v-model="form.date"
+        required
+        class="input mt-1"
       />
+    </div>
 
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2">
-          Category
-        </label>
-        <select
-          v-model="categoryId"
-          class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        >
-          <option value="">Select a category</option>
-          <option
-            v-for="category in store.categories"
-            :key="category.id"
-            :value="category.id"
-          >
-            {{ category.name }}
-          </option>
-        </select>
-      </div>
+    <div v-if="error" class="text-red-600 text-sm">{{ error }}</div>
 
-      <div v-if="error" class="text-red-500 text-sm">
-        {{ error }}
-      </div>
-
-      <button
-        type="submit"
-        class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-      >
-        Add Transaction
+    <div class="flex justify-end space-x-2">
+      <button type="button" @click="$emit('cancel')" class="btn btn-secondary">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary">
+        {{ transaction ? 'Update' : 'Create' }}
       </button>
     </div>
   </form>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useCategoriesStore } from '../../stores/categories';
+
+const props = defineProps({
+  transaction: {
+    type: Object,
+    default: null
+  }
+});
+
+const emit = defineEmits(['submit', 'cancel']);
+const categoriesStore = useCategoriesStore();
+const error = ref('');
+
+const form = ref({
+  description: '',
+  amount: '',
+  categoryId: '',
+  type: 'expense',
+  date: new Date().toISOString().slice(0, 10)
+});
+
+onMounted(async () => {
+  if (!categoriesStore.items.length) {
+    await categoriesStore.fetchCategories();
+  }
+  if (props.transaction) {
+    form.value = { ...props.transaction };
+  }
+});
+
+const handleSubmit = () => {
+  try {
+    emit('submit', { ...form.value });
+  } catch (err) {
+    error.value = err.message;
+  }
+};
+</script>

@@ -1,15 +1,22 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import App from './App.vue'
-import router from './router'
-import './style.css'
-import axios from 'axios'
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import App from './App.vue';
+import router from './router';
+import './style.css';
 
-// Configure axios
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-axios.defaults.withCredentials = true
+const app = createApp(App);
+const pinia = createPinia();
 
-const app = createApp(App)
-app.use(createPinia())
-app.use(router)
-app.mount('#app')
+app.use(pinia);
+app.use(router);
+
+// Initialize theme before mounting
+const initTheme = () => {
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+  }
+};
+
+initTheme();
+app.mount('#app');
